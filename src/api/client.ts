@@ -1,5 +1,4 @@
 import axios from 'axios'
-import type { AxiosRequestConfig } from 'axios'
 import { API_BASE, STORAGE_KEYS } from '@/constants'
 import router from '@/router'
 import { useAuthStore } from '@/stores/auth'

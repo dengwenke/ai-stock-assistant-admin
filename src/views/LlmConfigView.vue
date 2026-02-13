@@ -2,7 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getLlmConfig, saveLlmConfig } from '@/api/client'
-import type { LlmConfigResponse, LlmConfigRequest, LlmConfigAccountItem } from '@/api/types'
+import type { LlmConfigResponse, LlmConfigRequest } from '@/api/types'
 
 const loading = ref(false)
 const saving = ref(false)

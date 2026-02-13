@@ -1,0 +1,39 @@
+# Dependencies & build artifacts
+node_modules
+dist
+*.local
+
+# Version control & IDE
+.git
+.gitignore
+.idea
+.cursor
+*.iml
+*.ipr
+*.iws
+
+# Docs & 非构建必需
+README.md
+.claude
+.github
+*.md
+!nginx.conf
+
+# 开发/测试
+.env
+.env.*
+*.log
+*.tsbuildinfo
+coverage
+*.spec.ts
+*.test.ts
+__tests__
+e2e
+cypress
+playwright
+
+# 系统与杂项
+.DS_Store
+Thumbs.db
+*.tgz
+*.tar.gz

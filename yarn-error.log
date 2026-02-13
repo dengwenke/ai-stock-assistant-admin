@@ -1,0 +1,55 @@
+Arguments: 
+  /Users/winkd/.nvm/versions/node/v22.22.0/bin/node /opt/homebrew/bin/yarn install
+
+PATH: 
+  /Users/winkd/.nvm/versions/node/v22.22.0/bin:/Library/Frameworks/Python.framework/Versions/3.14/bin:/Users/winkd/.nvm/versions/node/v22.22.0/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/Library/Apple/usr/bin:/usr/local/share/dotnet:~/.dotnet/tools:/Library/Frameworks/Python.framework/Versions/3.14/bin:/Users/winkd/.nvm/versions/node/v22.22.0/bin:/Users/winkd/.cursor/extensions/vscjava.vscode-java-debug-0.58.5-universal/bundled/scripts/noConfigScripts:/usr/local/bin
+
+Yarn version: 
+  1.22.18
+
+Node version: 
+  22.22.0
+
+Platform: 
+  darwin arm64
+
+Trace: 
+  Error: https://registry.npmmirror.com/@element-plus%2ficons-vue: ETIMEDOUT
+      at Timeout._onTimeout (/opt/homebrew/lib/node_modules/yarn/lib/cli.js:141543:19)
+      at listOnTimeout (node:internal/timers:588:17)
+      at process.processTimers (node:internal/timers:523:7)
+
+npm manifest: 
+  {
+    "name": "stock-assistant-admin",
+    "version": "0.0.0",
+    "private": true,
+    "type": "module",
+    "scripts": {
+      "dev": "vite",
+      "start": "vite",
+      "build": "vue-tsc && vite build",
+      "preview": "vite preview"
+    },
+    "dependencies": {
+      "@element-plus/icons-vue": "^2.3.2",
+      "axios": "^1.7.9",
+      "element-plus": "^2.13.2",
+      "pinia": "^2.3.0",
+      "vue": "^3.5.13",
+      "vue-router": "^4.5.0"
+    },
+    "devDependencies": {
+      "@types/node": "^22.10.1",
+      "@vitejs/plugin-vue": "^5.2.1",
+      "typescript": "~5.6.2",
+      "vite": "^6.0.3",
+      "vue-tsc": "^2.1.10"
+    }
+  }
+
+yarn manifest: 
+  No manifest
+
+Lockfile: 
+  No lockfile

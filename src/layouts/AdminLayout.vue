@@ -9,6 +9,7 @@ import {
   Setting,
   Document,
   Key,
+  Connection,
   SwitchButton,
   Fold,
   Expand,
@@ -26,6 +27,7 @@ const iconMap: Record<string, typeof Odometer> = {
   Setting,
   Document,
   Key,
+  Connection,
 }
 
 const currentTitle = computed(() => {

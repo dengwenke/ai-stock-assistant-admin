@@ -34,6 +34,15 @@ export interface ScheduledTaskUpdateRequest {
   description?: string
 }
 
+/** 定时任务分页结果 */
+export interface ScheduledTaskPageResult {
+  list: ScheduledTaskItem[]
+  total: number
+  page: number
+  size: number
+  pages: number
+}
+
 /** LLM 配置账号项 */
 export interface LlmConfigAccountItem {
   name: string
@@ -90,4 +99,53 @@ export interface SysConfigItem {
 /** 系统配置单条更新入参 */
 export interface SysConfigUpdateRequest {
   configValue?: string
+}
+
+/** Outbox 事件项 */
+export interface OutboxEvent {
+  id: number
+  idempotencyKey: string
+  eventType: string
+  bizKey: string
+  status: string
+  retryCount: number
+  nextRetryTime: string | null
+  lastError: string | null
+  createTime: string
+  updateTime: string
+}
+
+/** Outbox 事件分页结果 */
+export interface OutboxEventPageResult {
+  list: OutboxEvent[]
+  total: number
+  page: number
+  size: number
+  pages: number
+}
+
+/** Outbox 监控指标 */
+export interface OutboxMetrics {
+  pendingCount: number
+  processingCount: number
+  failedCount: number
+  deadCount: number
+  successInWindow: number
+  avgProcessTimeMs: number
+  alertPending: boolean
+  alertFailed: boolean
+  alertDead: boolean
+  alertProcessing: boolean
+  pendingWarn: number
+  failedWarn: number
+  deadWarn: number
+  processingWarn: number
+}
+
+/** Outbox 重放结果 */
+export interface OutboxReplayResult {
+  matchedCount: number
+  resetCount: number
+  dryRun: boolean
+  policyName: string
 }

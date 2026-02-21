@@ -43,18 +43,18 @@ export const SIDEBAR_MENUS: MenuItem[] = [
     order: 18,
   },
   {
-    id: 'llm-config',
-    title: 'LLM 配置',
-    path: '/llm-config',
-    icon: 'Setting',
-    order: 20,
-  },
-  {
     id: 'llm-logs',
     title: 'LLM 调用日志',
     path: '/llm-logs',
     icon: 'Document',
     order: 30,
+  },
+  {
+    id: 'outbox',
+    title: 'Outbox 事件',
+    path: '/outbox',
+    icon: 'Connection',
+    order: 40,
   },
 ].sort((a, b) => (a.order ?? 99) - (b.order ?? 99))
 

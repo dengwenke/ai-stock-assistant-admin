@@ -35,16 +35,16 @@ const router = createRouter({
           meta: { title: '配置管理' },
         },
         {
-          path: 'llm-config',
-          name: 'llm-config',
-          component: () => import('@/views/LlmConfigView.vue'),
-          meta: { title: 'LLM 配置' },
-        },
-        {
           path: 'llm-logs',
           name: 'llm-logs',
           component: () => import('@/views/LlmLogsView.vue'),
           meta: { title: 'LLM 调用日志' },
+        },
+        {
+          path: 'outbox',
+          name: 'outbox',
+          component: () => import('@/views/OutboxView.vue'),
+          meta: { title: 'Outbox 事件' },
         },
       ],
     },

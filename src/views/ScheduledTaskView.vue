@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
-  getScheduledTaskList,
+  getScheduledTaskPage,
   updateScheduledTask,
   refreshScheduledTasks,
   runScheduledTask,
@@ -10,13 +10,15 @@ import {
 } from '@/api/client'
 import type { ScheduledTaskItem, ScheduledTaskUpdateRequest } from '@/api/types'
 import {
-  MONITORED_TASK_KEY_SET,
-  MONITORED_TASKS,
-  sortScheduledTasks,
+  SCHEDULED_TASKS,
+  TASK_CATEGORY_LABELS,
+  TASK_CATEGORY_COLORS,
 } from '@/domain/task-monitor'
 
 const list = ref<ScheduledTaskItem[]>([])
-const showAllTasks = ref(false)
+const total = ref(0)
+const page = ref(1)
+const pageSize = ref(20)
 const loading = ref(false)
 const refreshLoading = ref(false)
 
@@ -29,21 +31,27 @@ const editForm = ref<ScheduledTaskUpdateRequest & { taskKey: string }>({
 })
 const editSaving = ref(false)
 
-const visibleList = computed(() => {
-  if (showAllTasks.value) return list.value
-  return list.value.filter((row) => MONITORED_TASK_KEY_SET.has(row.taskKey))
-})
+function getTaskTitle(taskKey: string): string {
+  const task = SCHEDULED_TASKS.find((t) => t.taskKey === taskKey)
+  return task?.title || taskKey
+}
 
-const missingMonitoredTaskKeys = computed(() => {
-  const present = new Set(list.value.map((item) => item.taskKey))
-  return MONITORED_TASKS.map((item) => item.taskKey).filter((taskKey) => !present.has(taskKey))
-})
+function getTaskDescription(taskKey: string): string {
+  const task = SCHEDULED_TASKS.find((t) => t.taskKey === taskKey)
+  return task?.description || ''
+}
+
+function getTaskCategory(taskKey: string): string {
+  const task = SCHEDULED_TASKS.find((t) => t.taskKey === taskKey)
+  return task?.category || ''
+}
 
 async function load() {
   loading.value = true
   try {
-    const data = await getScheduledTaskList()
-    list.value = sortScheduledTasks(data)
+    const res = await getScheduledTaskPage({ page: page.value, size: pageSize.value })
+    list.value = res.list
+    total.value = res.total
   } catch (e: unknown) {
     ElMessage.error(e instanceof Error ? e.message : '加载失败')
   } finally {
@@ -56,7 +64,6 @@ async function handleRefresh() {
   try {
     await refreshScheduledTasks()
     ElMessage.success('调度已刷新')
-    await load()
   } catch (e: unknown) {
     ElMessage.error(e instanceof Error ? e.message : '刷新失败')
   } finally {
@@ -110,7 +117,6 @@ async function handleRun(taskKey: string) {
   try {
     await runScheduledTask(taskKey)
     ElMessage.success('已触发执行')
-    await load()
   } catch (e: unknown) {
     ElMessage.error(e instanceof Error ? e.message : '执行失败')
   }
@@ -139,6 +145,17 @@ async function handleDelete(row: ScheduledTaskItem) {
   }
 }
 
+function onPageChange(p: number) {
+  page.value = p
+  load()
+}
+
+function onSizeChange(s: number) {
+  pageSize.value = s
+  page.value = 1
+  load()
+}
+
 onMounted(load)
 </script>
 
@@ -146,13 +163,10 @@ onMounted(load)
   <div class="scheduled-task-view">
     <div class="page-header">
       <h1 class="page-title">定时任务</h1>
-      <p class="page-desc">默认仅展示监测任务（含 GainTrackFillTask）；修改后需点击「刷新调度」使配置生效。</p>
+      <p class="page-desc">
+        管理数据同步、指标计算等定时任务。修改后需点击「刷新调度」使配置生效。
+      </p>
       <div class="toolbar">
-        <el-switch
-          v-model="showAllTasks"
-          active-text="显示全部任务"
-          inactive-text="仅监测任务"
-        />
         <el-button
           type="primary"
           :loading="refreshLoading"
@@ -161,51 +175,76 @@ onMounted(load)
           刷新调度
         </el-button>
       </div>
-      <div v-if="missingMonitoredTaskKeys.length" class="missing-tip">
-        未在后端任务列表中发现监测任务：{{ missingMonitoredTaskKeys.join(', ') }}
-      </div>
     </div>
 
-    <div class="table-card">
-      <el-table
-        v-loading="loading"
-        :data="visibleList"
-        stripe
-        class="task-table"
-      >
-        <el-table-column prop="taskKey" label="任务键" min-width="200" show-overflow-tooltip />
-        <el-table-column prop="cronExpression" label="Cron 表达式" min-width="140">
-          <template #default="{ row }">
-            <code class="cron-cell">{{ row.cronExpression || '—' }}</code>
-          </template>
-        </el-table-column>
-        <el-table-column prop="enabled" label="状态" width="88" align="center">
-          <template #default="{ row }">
-            <el-tag :type="row.enabled === 1 ? 'success' : 'info'" size="small">
-              {{ row.enabled === 1 ? '启用' : '禁用' }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="description" label="说明" min-width="200" show-overflow-tooltip>
-          <template #default="{ row }">
-            <span>{{ row.description || '—' }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="240" fixed="right" align="center">
-          <template #default="{ row }">
-            <el-button type="primary" link size="small" @click="openEdit(row)">
-              编辑
-            </el-button>
-            <el-button type="primary" link size="small" @click="handleRun(row.taskKey)">
-              立即执行
-            </el-button>
-            <el-button type="danger" link size="small" @click="handleDelete(row)">
-              删除
-            </el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-    </div>
+    <el-table
+      v-loading="loading"
+      :data="list"
+      stripe
+      style="width: 100%"
+    >
+      <el-table-column label="任务" min-width="220">
+        <template #default="{ row }">
+          <div class="task-name">
+            <span class="task-title">{{ getTaskTitle(row.taskKey) }}</span>
+            <span class="task-key">{{ row.taskKey }}</span>
+          </div>
+        </template>
+      </el-table-column>
+      <el-table-column label="分类" width="100">
+        <template #default="{ row }">
+          <span
+            v-if="getTaskCategory(row.taskKey)"
+            class="category-tag"
+            :style="{ borderColor: TASK_CATEGORY_COLORS[getTaskCategory(row.taskKey)] || '#909399', color: TASK_CATEGORY_COLORS[getTaskCategory(row.taskKey)] || '#909399' }"
+          >
+            {{ TASK_CATEGORY_LABELS[getTaskCategory(row.taskKey)] || '' }}
+          </span>
+          <span v-else class="category-tag category-other">其他</span>
+        </template>
+      </el-table-column>
+      <el-table-column prop="cronExpression" label="Cron 表达式" min-width="140">
+        <template #default="{ row }">
+          <code class="cron-cell">{{ row.cronExpression || '—' }}</code>
+        </template>
+      </el-table-column>
+      <el-table-column prop="enabled" label="状态" width="88" align="center">
+        <template #default="{ row }">
+          <el-tag :type="row.enabled === 1 ? 'success' : 'info'" size="small">
+            {{ row.enabled === 1 ? '启用' : '禁用' }}
+          </el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column prop="description" label="说明" min-width="180" show-overflow-tooltip>
+        <template #default="{ row }">
+          <span>{{ row.description || getTaskDescription(row.taskKey) || '—' }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="操作" width="200" fixed="right" align="center">
+        <template #default="{ row }">
+          <el-button type="primary" link size="small" @click="openEdit(row)">
+            编辑
+          </el-button>
+          <el-button type="success" link size="small" @click="handleRun(row.taskKey)">
+            执行
+          </el-button>
+          <el-button type="danger" link size="small" @click="handleDelete(row)">
+            删除
+          </el-button>
+        </template>
+      </el-table-column>
+    </el-table>
+
+    <el-pagination
+      v-model:current-page="page"
+      v-model:page-size="pageSize"
+      :total="total"
+      :page-sizes="[10, 20, 50, 100]"
+      layout="total, sizes, prev, pager, next"
+      class="pagination"
+      @current-change="onPageChange"
+      @size-change="onSizeChange"
+    />
 
     <el-dialog
       v-model="editVisible"
@@ -255,7 +294,7 @@ onMounted(load)
 
 <style scoped>
 .scheduled-task-view {
-  max-width: 1100px;
+  max-width: 1200px;
   margin: 0 auto;
 }
 
@@ -283,21 +322,34 @@ onMounted(load)
   gap: 12px;
 }
 
-.missing-tip {
-  margin-top: 10px;
-  font-size: 0.8125rem;
-  color: #b45309;
+.task-name {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
-.table-card {
-  background: #fff;
-  border-radius: 10px;
-  padding: 16px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+.task-title {
+  font-weight: 500;
+  color: #0f172a;
 }
 
-.task-table {
-  width: 100%;
+.task-key {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  font-family: ui-monospace, monospace;
+}
+
+.category-tag {
+  display: inline-block;
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid;
+}
+
+.category-other {
+  border-color: #909399;
+  color: #909399;
 }
 
 .cron-cell {
@@ -306,6 +358,11 @@ onMounted(load)
   background: #f1f5f9;
   padding: 2px 6px;
   border-radius: 4px;
+}
+
+.pagination {
+  margin-top: 16px;
+  justify-content: flex-end;
 }
 
 .form-hint {

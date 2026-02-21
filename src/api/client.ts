@@ -5,14 +5,15 @@ import { useAuthStore } from '@/stores/auth'
 import type {
   AdminLoginRequest,
   AdminLoginResponse,
-  ScheduledTaskItem,
+  ScheduledTaskPageResult,
   ScheduledTaskUpdateRequest,
-  LlmConfigResponse,
-  LlmConfigRequest,
   LlmRequestLogItem,
   LlmLogPageResult,
   SysConfigItem,
   SysConfigUpdateRequest,
+  OutboxEventPageResult,
+  OutboxMetrics,
+  OutboxReplayResult,
 } from './types'
 
 declare module 'axios' {
@@ -72,10 +73,13 @@ export async function adminLogout(): Promise<void> {
   await client.post('/admin/auth/logout')
 }
 
-/** 定时任务列表 */
-export async function getScheduledTaskList(): Promise<ScheduledTaskItem[]> {
-  const res = await client.get<ScheduledTaskItem[]>('/admin/scheduled-task')
-  return res.data ?? []
+/** 定时任务分页查询 */
+export async function getScheduledTaskPage(params: {
+  page?: number
+  size?: number
+}): Promise<ScheduledTaskPageResult> {
+  const res = await client.get<ScheduledTaskPageResult>('/admin/scheduled-task', { params })
+  return res.data ?? { list: [], total: 0, page: 1, size: 20, pages: 0 }
 }
 
 /** 定时任务部分更新 */
@@ -101,17 +105,6 @@ export async function runScheduledTask(taskKey: string): Promise<void> {
   await client.post('/admin/scheduled-task/run', null, {
     params: { taskKey },
   })
-}
-
-/** 获取 LLM 配置 */
-export async function getLlmConfig(): Promise<LlmConfigResponse> {
-  const res = await client.get<LlmConfigResponse>('/admin/llm/config')
-  return res.data ?? { apiUrl: '', modelId: '', accounts: [] }
-}
-
-/** 保存 LLM 配置 */
-export async function saveLlmConfig(body: LlmConfigRequest): Promise<void> {
-  await client.put('/admin/llm/config', body)
 }
 
 /** LLM 调用日志分页 */
@@ -160,6 +153,74 @@ export async function updateConfig(
     `/admin/config/${encodeURIComponent(configKey)}`,
     body
   )
+}
+
+/** Outbox 事件分页查询 */
+export async function getOutboxEvents(params: {
+  page?: number
+  size?: number
+  status?: string
+  eventType?: string
+  bizKey?: string
+}): Promise<OutboxEventPageResult> {
+  const res = await client.get<OutboxEventPageResult>('/admin/outbox/events', { params })
+  return res.data ?? { list: [], total: 0, page: 1, size: 20, pages: 0 }
+}
+
+/** Outbox 事件重放（按 ID） */
+export async function replayOutboxEvents(ids: number[]): Promise<OutboxReplayResult> {
+  const res = await client.post<OutboxReplayResult>('/admin/outbox/events/replay', { ids })
+  return res.data ?? { matchedCount: 0, resetCount: 0, dryRun: false, policyName: '' }
+}
+
+/** Outbox 事件重放（按查询条件） */
+export async function replayOutboxByQuery(params: {
+  statuses?: string[]
+  eventType?: string
+  bizKeyLike?: string
+  limit?: number
+  dryRun?: boolean
+}): Promise<OutboxReplayResult> {
+  const res = await client.post<OutboxReplayResult>('/admin/outbox/events/replay-by-query', params)
+  return res.data ?? { matchedCount: 0, resetCount: 0, dryRun: false, policyName: '' }
+}
+
+/** Outbox 事件重放（按策略） */
+export async function replayOutboxByPolicy(params: {
+  policyName: string
+  bizKeyLike?: string
+  limit?: number
+  dryRun?: boolean
+}): Promise<OutboxReplayResult> {
+  const res = await client.post<OutboxReplayResult>('/admin/outbox/events/replay-by-policy', params)
+  return res.data ?? { matchedCount: 0, resetCount: 0, dryRun: false, policyName: '' }
+}
+
+/** Outbox 监控指标 */
+export async function getOutboxMetrics(params?: {
+  lookbackMinutes?: number
+  pendingWarn?: number
+  failedWarn?: number
+  deadWarn?: number
+  processingWarn?: number
+}): Promise<OutboxMetrics> {
+  const res = await client.get<OutboxMetrics>('/admin/outbox/metrics/overview', { params })
+  return res.data ?? {
+    pendingCount: 0,
+    processingCount: 0,
+    failedCount: 0,
+    deadCount: 0,
+    successInWindow: 0,
+    avgProcessTimeMs: 0,
+    alertPending: false,
+    alertFailed: false,
+    alertDead: false,
+    alertProcessing: false,
+    pendingWarn: 500,
+    failedWarn: 50,
+    deadWarn: 10,
+    processingWarn: 100,
+  }
 }
 
 export { client }

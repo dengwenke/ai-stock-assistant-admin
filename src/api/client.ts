@@ -129,6 +129,16 @@ export async function getLlmLogPage(params: {
   }
 }
 
+/** 按任务类型获取最近一条 LLM 调用日志 */
+export async function getLatestLlmLogByTaskType(taskType: string): Promise<LlmRequestLogItem | null> {
+  const data = await getLlmLogPage({
+    page: 1,
+    size: 1,
+    taskType,
+  })
+  return data.list[0] ?? null
+}
+
 /** LLM 调用日志详情 */
 export async function getLlmLogById(id: number): Promise<LlmRequestLogItem> {
   const res = await client.get<LlmRequestLogItem>(`/admin/llm/logs/${id}`)

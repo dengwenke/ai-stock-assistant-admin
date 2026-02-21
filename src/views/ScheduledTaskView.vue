@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   getScheduledTaskList,
@@ -9,8 +9,14 @@ import {
   deleteScheduledTask,
 } from '@/api/client'
 import type { ScheduledTaskItem, ScheduledTaskUpdateRequest } from '@/api/types'
+import {
+  MONITORED_TASK_KEY_SET,
+  MONITORED_TASKS,
+  sortScheduledTasks,
+} from '@/domain/task-monitor'
 
 const list = ref<ScheduledTaskItem[]>([])
+const showAllTasks = ref(false)
 const loading = ref(false)
 const refreshLoading = ref(false)
 
@@ -23,10 +29,21 @@ const editForm = ref<ScheduledTaskUpdateRequest & { taskKey: string }>({
 })
 const editSaving = ref(false)
 
+const visibleList = computed(() => {
+  if (showAllTasks.value) return list.value
+  return list.value.filter((row) => MONITORED_TASK_KEY_SET.has(row.taskKey))
+})
+
+const missingMonitoredTaskKeys = computed(() => {
+  const present = new Set(list.value.map((item) => item.taskKey))
+  return MONITORED_TASKS.map((item) => item.taskKey).filter((taskKey) => !present.has(taskKey))
+})
+
 async function load() {
   loading.value = true
   try {
-    list.value = await getScheduledTaskList()
+    const data = await getScheduledTaskList()
+    list.value = sortScheduledTasks(data)
   } catch (e: unknown) {
     ElMessage.error(e instanceof Error ? e.message : '加载失败')
   } finally {
@@ -129,8 +146,13 @@ onMounted(load)
   <div class="scheduled-task-view">
     <div class="page-header">
       <h1 class="page-title">定时任务</h1>
-      <p class="page-desc">统一使用 Cron 表达式配置执行时间，修改后需点击「刷新调度」使配置生效。</p>
+      <p class="page-desc">默认仅展示监测任务（含 GainTrackFillTask）；修改后需点击「刷新调度」使配置生效。</p>
       <div class="toolbar">
+        <el-switch
+          v-model="showAllTasks"
+          active-text="显示全部任务"
+          inactive-text="仅监测任务"
+        />
         <el-button
           type="primary"
           :loading="refreshLoading"
@@ -139,12 +161,15 @@ onMounted(load)
           刷新调度
         </el-button>
       </div>
+      <div v-if="missingMonitoredTaskKeys.length" class="missing-tip">
+        未在后端任务列表中发现监测任务：{{ missingMonitoredTaskKeys.join(', ') }}
+      </div>
     </div>
 
     <div class="table-card">
       <el-table
         v-loading="loading"
-        :data="list"
+        :data="visibleList"
         stripe
         class="task-table"
       >
@@ -256,6 +281,12 @@ onMounted(load)
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.missing-tip {
+  margin-top: 10px;
+  font-size: 0.8125rem;
+  color: #b45309;
 }
 
 .table-card {

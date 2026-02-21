@@ -1,18 +1,31 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getLlmLogPage, getLlmLogById } from '@/api/client'
 import type { LlmRequestLogItem } from '@/api/types'
+import { MONITORED_TASK_TYPE_OPTIONS } from '@/domain/task-monitor'
+import { useRoute } from 'vue-router'
 
 const list = ref<LlmRequestLogItem[]>([])
 const total = ref(0)
 const loading = ref(false)
 const page = ref(1)
 const pageSize = ref(20)
-const taskType = ref('')
+const selectedTaskType = ref('')
+const customTaskType = ref('')
 const detailVisible = ref(false)
 const detailLoading = ref(false)
 const detailRow = ref<LlmRequestLogItem | null>(null)
+const route = useRoute()
+
+const taskType = computed(() => (selectedTaskType.value || customTaskType.value).trim())
+
+function syncTaskTypeFromRoute() {
+  const queryTaskType = String(route.query.taskType ?? '').trim()
+  const matched = MONITORED_TASK_TYPE_OPTIONS.some((opt) => opt.value === queryTaskType)
+  selectedTaskType.value = matched ? queryTaskType : ''
+  customTaskType.value = matched ? '' : queryTaskType
+}
 
 async function load() {
   loading.value = true
@@ -50,22 +63,55 @@ function onSizeChange() {
   load()
 }
 
-onMounted(load)
+function query() {
+  page.value = 1
+  load()
+}
+
+watch(
+  () => route.query.taskType,
+  () => {
+    syncTaskTypeFromRoute()
+    query()
+  }
+)
+
+watch(selectedTaskType, (value) => {
+  if (value) customTaskType.value = ''
+})
+
+onMounted(() => {
+  syncTaskTypeFromRoute()
+  load()
+})
 </script>
 
 <template>
   <div class="llm-logs-view">
     <div class="toolbar">
       <h2 class="page-title">LLM 调用日志</h2>
-      <el-input
-        v-model="taskType"
-        placeholder="按任务类型筛选"
+      <el-select
+        v-model="selectedTaskType"
         clearable
-        style="width: 200px"
-        @clear="load"
-        @keyup.enter="load"
+        placeholder="监测任务快捷筛选"
+        style="width: 230px"
+      >
+        <el-option
+          v-for="opt in MONITORED_TASK_TYPE_OPTIONS"
+          :key="opt.value"
+          :label="opt.label"
+          :value="opt.value"
+        />
+      </el-select>
+      <el-input
+        v-model="customTaskType"
+        placeholder="输入 taskType（可选）"
+        clearable
+        style="width: 220px"
+        @clear="query"
+        @keyup.enter="query"
       />
-      <el-button type="primary" @click="load">查询</el-button>
+      <el-button type="primary" @click="query">查询</el-button>
     </div>
     <el-table v-loading="loading" :data="list" stripe style="width: 100%">
       <el-table-column prop="id" label="ID" width="70" />

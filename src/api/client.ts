@@ -11,6 +11,7 @@ import type {
   LlmLogPageResult,
   SysConfigItem,
   SysConfigUpdateRequest,
+  SysConfigCreateRequest,
   OutboxEventPageResult,
   OutboxMetrics,
   OutboxReplayResult,
@@ -153,6 +154,11 @@ export async function updateConfig(
     `/admin/config/${encodeURIComponent(configKey)}`,
     body
   )
+}
+
+/** 系统配置新增 */
+export async function createConfig(body: SysConfigCreateRequest): Promise<void> {
+  await client.post('/admin/config', body)
 }
 
 /** Outbox 事件分页查询 */

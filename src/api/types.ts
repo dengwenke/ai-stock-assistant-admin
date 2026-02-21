@@ -93,12 +93,20 @@ export interface SysConfigItem {
   id: number
   configKey: string
   configValue: string | null
+  description: string | null
   updatedAt: string | null
 }
 
 /** 系统配置单条更新入参 */
 export interface SysConfigUpdateRequest {
   configValue?: string
+}
+
+/** 系统配置新增入参 */
+export interface SysConfigCreateRequest {
+  configKey: string
+  configValue?: string
+  description?: string
 }
 
 /** Outbox 事件项 */

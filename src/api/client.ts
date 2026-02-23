@@ -169,14 +169,16 @@ export async function getOutboxEvents(params: {
   eventType?: string
   bizKey?: string
 }): Promise<OutboxEventPageResult> {
-  const res = await client.get<OutboxEventPageResult>('/admin/outbox/events', { params })
-  return res.data ?? { list: [], total: 0, page: 1, size: 20, pages: 0 }
+  const res = await client.get<{ data: OutboxEventPageResult }>('/admin/outbox/events', { params })
+  const data = res.data?.data
+  return data ?? { list: [], total: 0, page: 1, size: 20, pages: 0 }
 }
 
 /** Outbox 事件重放（按 ID） */
 export async function replayOutboxEvents(ids: number[]): Promise<OutboxReplayResult> {
-  const res = await client.post<OutboxReplayResult>('/admin/outbox/events/replay', { ids })
-  return res.data ?? { matchedCount: 0, resetCount: 0, dryRun: false, policyName: '' }
+  const res = await client.post<{ data: OutboxReplayResult }>('/admin/outbox/events/replay', { ids })
+  const data = res.data?.data
+  return data ?? { matchedCount: 0, resetCount: 0, dryRun: false, policyName: '' }
 }
 
 /** Outbox 事件重放（按查询条件） */
@@ -187,8 +189,9 @@ export async function replayOutboxByQuery(params: {
   limit?: number
   dryRun?: boolean
 }): Promise<OutboxReplayResult> {
-  const res = await client.post<OutboxReplayResult>('/admin/outbox/events/replay-by-query', params)
-  return res.data ?? { matchedCount: 0, resetCount: 0, dryRun: false, policyName: '' }
+  const res = await client.post<{ data: OutboxReplayResult }>('/admin/outbox/events/replay-by-query', params)
+  const data = res.data?.data
+  return data ?? { matchedCount: 0, resetCount: 0, dryRun: false, policyName: '' }
 }
 
 /** Outbox 事件重放（按策略） */
@@ -198,8 +201,9 @@ export async function replayOutboxByPolicy(params: {
   limit?: number
   dryRun?: boolean
 }): Promise<OutboxReplayResult> {
-  const res = await client.post<OutboxReplayResult>('/admin/outbox/events/replay-by-policy', params)
-  return res.data ?? { matchedCount: 0, resetCount: 0, dryRun: false, policyName: '' }
+  const res = await client.post<{ data: OutboxReplayResult }>('/admin/outbox/events/replay-by-policy', params)
+  const data = res.data?.data
+  return data ?? { matchedCount: 0, resetCount: 0, dryRun: false, policyName: '' }
 }
 
 /** Outbox 监控指标 */
@@ -210,8 +214,9 @@ export async function getOutboxMetrics(params?: {
   deadWarn?: number
   processingWarn?: number
 }): Promise<OutboxMetrics> {
-  const res = await client.get<OutboxMetrics>('/admin/outbox/metrics/overview', { params })
-  return res.data ?? {
+  const res = await client.get<{ data: OutboxMetrics }>('/admin/outbox/metrics/overview', { params })
+  const data = res.data?.data
+  return data ?? {
     pendingCount: 0,
     processingCount: 0,
     failedCount: 0,

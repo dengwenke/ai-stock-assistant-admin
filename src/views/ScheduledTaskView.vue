@@ -9,11 +9,7 @@ import {
   deleteScheduledTask,
 } from '@/api/client'
 import type { ScheduledTaskItem, ScheduledTaskUpdateRequest } from '@/api/types'
-import {
-  SCHEDULED_TASKS,
-  TASK_CATEGORY_LABELS,
-  TASK_CATEGORY_COLORS,
-} from '@/domain/task-monitor'
+import { SCHEDULED_TASKS } from '@/domain/task-monitor'
 
 const list = ref<ScheduledTaskItem[]>([])
 const total = ref(0)
@@ -39,11 +35,6 @@ function getTaskTitle(taskKey: string): string {
 function getTaskDescription(taskKey: string): string {
   const task = SCHEDULED_TASKS.find((t) => t.taskKey === taskKey)
   return task?.description || ''
-}
-
-function getTaskCategory(taskKey: string): string {
-  const task = SCHEDULED_TASKS.find((t) => t.taskKey === taskKey)
-  return task?.category || ''
 }
 
 async function load() {
@@ -162,10 +153,12 @@ onMounted(load)
 <template>
   <div class="scheduled-task-view">
     <div class="page-header">
-      <h1 class="page-title">定时任务</h1>
-      <p class="page-desc">
-        管理数据同步、指标计算等定时任务。修改后需点击「刷新调度」使配置生效。
-      </p>
+      <div class="header-left">
+        <h1 class="page-title">定时任务</h1>
+        <p class="page-desc">
+          管理数据同步、指标计算等定时任务。修改后需点击「刷新调度」使配置生效。
+        </p>
+      </div>
       <div class="toolbar">
         <el-button
           type="primary"
@@ -182,8 +175,9 @@ onMounted(load)
       :data="list"
       stripe
       style="width: 100%"
+      size="small"
     >
-      <el-table-column label="任务" min-width="220">
+      <el-table-column label="任务" min-width="180">
         <template #default="{ row }">
           <div class="task-name">
             <span class="task-title">{{ getTaskTitle(row.taskKey) }}</span>
@@ -191,36 +185,24 @@ onMounted(load)
           </div>
         </template>
       </el-table-column>
-      <el-table-column label="分类" width="100">
-        <template #default="{ row }">
-          <span
-            v-if="getTaskCategory(row.taskKey)"
-            class="category-tag"
-            :style="{ borderColor: TASK_CATEGORY_COLORS[getTaskCategory(row.taskKey)] || '#909399', color: TASK_CATEGORY_COLORS[getTaskCategory(row.taskKey)] || '#909399' }"
-          >
-            {{ TASK_CATEGORY_LABELS[getTaskCategory(row.taskKey)] || '' }}
-          </span>
-          <span v-else class="category-tag category-other">其他</span>
-        </template>
-      </el-table-column>
-      <el-table-column prop="cronExpression" label="Cron 表达式" min-width="140">
+      <el-table-column prop="cronExpression" label="Cron 表达式" min-width="130">
         <template #default="{ row }">
           <code class="cron-cell">{{ row.cronExpression || '—' }}</code>
         </template>
       </el-table-column>
-      <el-table-column prop="enabled" label="状态" width="88" align="center">
+      <el-table-column prop="enabled" label="状态" width="70" align="center">
         <template #default="{ row }">
           <el-tag :type="row.enabled === 1 ? 'success' : 'info'" size="small">
             {{ row.enabled === 1 ? '启用' : '禁用' }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="description" label="说明" min-width="180" show-overflow-tooltip>
+      <el-table-column prop="description" label="说明" min-width="150" show-overflow-tooltip>
         <template #default="{ row }">
           <span>{{ row.description || getTaskDescription(row.taskKey) || '—' }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="200" fixed="right" align="center">
+      <el-table-column label="操作" width="180" fixed="right" align="center">
         <template #default="{ row }">
           <el-button type="primary" link size="small" @click="openEdit(row)">
             编辑
@@ -239,9 +221,10 @@ onMounted(load)
       v-model:current-page="page"
       v-model:page-size="pageSize"
       :total="total"
-      :page-sizes="[10, 20, 50, 100]"
+      :page-sizes="[10, 20, 50]"
       layout="total, sizes, prev, pager, next"
       class="pagination"
+      size="small"
       @current-change="onPageChange"
       @size-change="onSizeChange"
     />
@@ -294,66 +277,64 @@ onMounted(load)
 
 <style scoped>
 .scheduled-task-view {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
+  padding: 16px 0;
 }
 
 .page-header {
-  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.header-left {
+  flex: 1;
 }
 
 .page-title {
-  margin: 0 0 6px 0;
-  font-size: 1.375rem;
+  margin: 0 0 4px 0;
+  font-size: 1.125rem;
   font-weight: 600;
   color: #0f172a;
 }
 
 .page-desc {
-  margin: 0 0 14px 0;
-  font-size: 0.875rem;
+  margin: 0;
+  font-size: 0.8125rem;
   color: #64748b;
-  line-height: 1.5;
+  line-height: 1.4;
 }
 
 .toolbar {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
+  margin-left: 16px;
+  flex-shrink: 0;
 }
 
 .task-name {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
 }
 
 .task-title {
   font-weight: 500;
   color: #0f172a;
+  font-size: 0.875rem;
 }
 
 .task-key {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: #94a3b8;
   font-family: ui-monospace, monospace;
 }
 
-.category-tag {
-  display: inline-block;
-  font-size: 0.75rem;
-  padding: 2px 8px;
-  border-radius: 4px;
-  border: 1px solid;
-}
-
-.category-other {
-  border-color: #909399;
-  color: #909399;
-}
-
 .cron-cell {
-  font-size: 0.8125rem;
+  font-size: 0.78125rem;
   font-family: ui-monospace, monospace;
   background: #f1f5f9;
   padding: 2px 6px;
@@ -361,7 +342,7 @@ onMounted(load)
 }
 
 .pagination {
-  margin-top: 16px;
+  margin-top: 12px;
   justify-content: flex-end;
 }
 

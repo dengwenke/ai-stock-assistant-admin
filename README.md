@@ -53,3 +53,12 @@ npm run dev
 npm run build
 npm run preview
 ```
+
+## 后端代码风格
+
+- 后端项目使用 **Java 21**，代码风格应使用更新版本的规范以避免警告
+- 推荐使用：
+  - 较新版本的 Maven 编译器插件（3.13.0+）
+  - 启用 `-parameters` 编译器参数
+  - 遵循现代 Java 风格指南，如 Google Java Style Guide 或 Alibaba Java Coding Guidelines
+- 避免使用已过时的 API 和语法，确保代码在 Java 21 环境下编译无警告

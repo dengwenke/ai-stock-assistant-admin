@@ -6,6 +6,7 @@ import type {
   AdminLoginRequest,
   AdminLoginResponse,
   ScheduledTaskPageResult,
+  ScheduledTaskCreateRequest,
   ScheduledTaskUpdateRequest,
   LlmRequestLogItem,
   LlmLogPageResult,
@@ -81,6 +82,11 @@ export async function getScheduledTaskPage(params: {
 }): Promise<ScheduledTaskPageResult> {
   const res = await client.get<ScheduledTaskPageResult>('/admin/scheduled-task', { params })
   return res.data ?? { list: [], total: 0, page: 1, size: 20, pages: 0 }
+}
+
+/** 新增定时任务 */
+export async function createScheduledTask(body: ScheduledTaskCreateRequest): Promise<void> {
+  await client.post('/admin/scheduled-task', body)
 }
 
 /** 定时任务部分更新 */

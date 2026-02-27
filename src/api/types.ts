@@ -34,6 +34,14 @@ export interface ScheduledTaskUpdateRequest {
   description?: string
 }
 
+/** 定时任务新增入参 */
+export interface ScheduledTaskCreateRequest {
+  taskKey: string
+  cronExpression: string
+  enabled?: number
+  description?: string
+}
+
 /** 定时任务分页结果 */
 export interface ScheduledTaskPageResult {
   list: ScheduledTaskItem[]

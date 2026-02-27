@@ -221,6 +221,7 @@ onMounted(() => {
       <el-table-column prop="nextRetryTime" label="下次重试" width="150" />
       <el-table-column prop="lastError" label="最后错误" min-width="150" show-overflow-tooltip />
       <el-table-column prop="createTime" label="创建时间" width="170" />
+      <el-table-column prop="updateTime" label="更新时间" width="170" />
     </el-table>
 
     <el-pagination

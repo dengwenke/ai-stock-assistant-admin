@@ -12,4 +12,5 @@
 
 - 设计系统：`design/DESIGN_SYSTEM.md`
 - 项目结构：`standards/PROJECT_STRUCTURE.md`
+- 注释规范：`standards/COMMENTING.md`
 - API/功能对照：`../../README.md`

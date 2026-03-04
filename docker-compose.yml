@@ -1,0 +1,17 @@
+# 管理端仅提供静态页面容器，统一由主网关按 /admin/ 路径转发。
+
+services:
+  admin:
+    build: .
+    image: ai-stock-assistant-admin:latest
+    container_name: ai-stock-assistant-admin
+    restart: unless-stopped
+    expose:
+      - "80"
+    networks:
+      - stock-assistant-net
+
+networks:
+  stock-assistant-net:
+    external: true
+    name: stock-assistant-net

@@ -1,0 +1,118 @@
+name: Deploy ai-stock-assistant-admin
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-ai-stock-assistant-admin-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+  DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+  DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+  APP_ROOT: /opt/ai-stock-assistant-admin
+
+jobs:
+  precheck:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate docker compose
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker compose config -q
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: precheck
+    timeout-minutes: 25
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare SSH
+        shell: bash
+        run: |
+          set -euo pipefail
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          PORT="${DEPLOY_PORT:-22}"
+          ssh-keyscan -p "$PORT" "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+
+      - name: Package source
+        shell: bash
+        run: |
+          set -euo pipefail
+          tar --exclude-vcs --exclude='release.tgz' -czf /tmp/release.tgz .
+          mv /tmp/release.tgz release.tgz
+          ls -lh release.tgz
+
+      - name: Upload package
+        shell: bash
+        run: |
+          set -euo pipefail
+          PORT="${DEPLOY_PORT:-22}"
+          timeout 180 ssh -p "$PORT" -i ~/.ssh/deploy_key -o BatchMode=yes -o ConnectTimeout=15 \
+            "${DEPLOY_USER}@${DEPLOY_HOST}" "cat > /tmp/ai-stock-assistant-admin-release.tgz" < release.tgz
+
+      - name: Deploy on server
+        shell: bash
+        env:
+          DEPLOY_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          PORT="${DEPLOY_PORT:-22}"
+          ssh -p "$PORT" -i ~/.ssh/deploy_key "${DEPLOY_USER}@${DEPLOY_HOST}" \
+            "DEPLOY_SHA='${DEPLOY_SHA}' APP_ROOT='${APP_ROOT}' bash -s" <<'REMOTE'
+          set -Eeuo pipefail
+
+          PROJECT_NAME="ai_stock_assistant_admin"
+          RELEASES_DIR="${APP_ROOT}/releases"
+          CURRENT_LINK="${APP_ROOT}/current"
+          RELEASE_DIR="${RELEASES_DIR}/${DEPLOY_SHA}"
+
+          on_error() {
+            echo "Deployment failed. Showing recent container logs..."
+            if [ -L "${CURRENT_LINK}" ] || [ -d "${CURRENT_LINK}" ]; then
+              cd "${CURRENT_LINK}" || return 0
+              docker compose -p "${PROJECT_NAME}" logs --tail=200 || true
+            fi
+          }
+          trap on_error ERR
+
+          sudo mkdir -p "${RELEASES_DIR}"
+          sudo chown -R "$USER:$USER" "${APP_ROOT}"
+          docker network inspect stock-assistant-net >/dev/null 2>&1 || docker network create stock-assistant-net >/dev/null
+
+          rm -rf "${RELEASE_DIR}"
+          mkdir -p "${RELEASE_DIR}"
+          tar -xzf /tmp/ai-stock-assistant-admin-release.tgz -C "${RELEASE_DIR}"
+
+          ln -sfn "${RELEASE_DIR}" "${CURRENT_LINK}"
+
+          cd "${CURRENT_LINK}"
+          echo "Deploy host: $(hostname)"
+          echo "Deploy release: ${DEPLOY_SHA}"
+
+          docker compose -p "${PROJECT_NAME}" up -d --build --remove-orphans
+
+          echo "Container status:"
+          docker compose -p "${PROJECT_NAME}" ps
+
+          if [ -d "${RELEASES_DIR}" ]; then
+            cd "${RELEASES_DIR}"
+            ls -1dt */ 2>/dev/null | tail -n +6 | xargs -r rm -rf --
+          fi
+          REMOTE
